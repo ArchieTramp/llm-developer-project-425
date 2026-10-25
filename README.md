@@ -43,3 +43,11 @@ cd llm-developer-project-425
 ## О Хекслете
 
 [Хекслет](https://ru.hexlet.io/) — школа программирования: авторские программы обучения с практикой, поддержкой наставников и реальными проектами, которые остаются в резюме. Этот репозиторий — один из таких проектов.
+
+## AI Studio
+
+- Агент: help-desk
+- agent_id: aac952hbacomb8hvcvvd
+- Модель: Deepseek
+- SA ai-studio-sa привязан к Cloud Function (не к агенту), роли: functions.functionInvoker, serverless.mcpGateways.invoker, lockbox.payloadViewer, ai.languageModels.user, ydb.editor
+- Секреты Lockbox: ydb-endpoint (ID), ydb-database (ID)

@@ -1,0 +1,15 @@
+- name: create-ticket
+  description: "Создать тикет в help desk"
+  input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string"},"category":{"type":"string"},"text":{"type":"string"}},"required":["user_id","category","text"]}'
+  action:
+    function_call:
+      function_id: <CF_ID>
+      tag: $latest
+
+- name: list-my-tickets
+  description: "Показать мои тикеты"
+  input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string"}},"required":["user_id"]}'
+  action:
+    function_call:
+      function_id: <CF_ID>
+      tag: $latest
