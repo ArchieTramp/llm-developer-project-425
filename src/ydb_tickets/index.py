@@ -12,66 +12,64 @@ driver = ydb.Driver(
     credentials=ydb.iam.MetadataUrlCredentials(),
 )
 driver.wait(fail_fast=True, timeout=5)
-pool = ydb.SessionPool(driver)
+pool = ydb.QuerySessionPool(driver)
 
 
 def _create_ticket(event):
     ticket_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
-    def callee(session):
-        session.transaction().execute(
-            """
-            DECLARE $id AS Utf8;
-            DECLARE $user_id AS Utf8;
-            DECLARE $category AS Utf8;
-            DECLARE $status AS Utf8;
-            DECLARE $text AS Utf8;
-            DECLARE $created_at AS Timestamp;
-            DECLARE $updated_at AS Timestamp;
-            UPSERT INTO tickets (id, user_id, category, status, text, created_at, updated_at)
-            VALUES ($id, $user_id, $category, $status, $text, $created_at, $updated_at);
-            """,
-            {
-                "$id": ticket_id,
-                "$user_id": event.get("user_id", ""),
-                "$category": event.get("category", "other"),
-                "$status": "open",
-                "$text": event.get("text", ""),
-                "$created_at": now,
-                "$updated_at": now,
-            },
-            commit_tx=True,
-        )
-    pool.retry_operation_sync(callee)
+
+    query = """
+    DECLARE $id AS Utf8;
+    DECLARE $user_id AS Utf8;
+    DECLARE $category AS Utf8;
+    DECLARE $status AS Utf8;
+    DECLARE $text AS Utf8;
+    DECLARE $created_at AS Timestamp;
+    DECLARE $updated_at AS Timestamp;
+    UPSERT INTO tickets (id, user_id, category, status, text, created_at, updated_at)
+    VALUES ($id, $user_id, $category, $status, $text, $created_at, $updated_at);
+    """
+
+    parameters = {
+        "$id": (ticket_id, ydb.PrimitiveType.Utf8),
+        "$user_id": (event.get("user_id", ""), ydb.PrimitiveType.Utf8),
+        "$category": (event.get("category", "other"), ydb.PrimitiveType.Utf8),
+        "$status": ("open", ydb.PrimitiveType.Utf8),
+        "$text": (event.get("text", ""), ydb.PrimitiveType.Utf8),
+        "$created_at": (now, ydb.PrimitiveType.Timestamp),
+        "$updated_at": (now, ydb.PrimitiveType.Timestamp),
+    }
+
+    pool.execute_with_retries(query, parameters)
     return {"ticket_id": ticket_id, "created_at": now.isoformat()}
 
 
 def _list_my_tickets(event):
     user_id = event.get("user_id", "")
-    def callee(session):
-        result = session.transaction().execute(
-            """
-            DECLARE $user_id AS Utf8;
-            SELECT id, status, category, text, created_at
-            FROM tickets
-            WHERE user_id = $user_id
-            ORDER BY created_at DESC
-            LIMIT 50;
-            """,
-            {"$user_id": user_id},
-            commit_tx=True,
-        )
-        rows = []
-        for row in result[0].rows:
-            rows.append({
-                "id": row.id,
-                "status": row.status,
-                "category": row.category,
-                "text": row.text,
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-            })
-        return rows
-    return pool.retry_operation_sync(callee)
+
+    query = """
+    DECLARE $user_id AS Utf8;
+    SELECT id, status, category, text, created_at
+    FROM tickets
+    WHERE user_id = $user_id
+    ORDER BY created_at DESC
+    LIMIT 50;
+    """
+
+    parameters = {"$user_id": user_id}
+
+    result_sets = pool.execute_with_retries(query, parameters)
+    rows = []
+    for row in result_sets[0].rows:
+        rows.append({
+            "id": row.id,
+            "status": row.status,
+            "category": row.category,
+            "text": row.text,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        })
+    return rows
 
 
 def handle(event, context):

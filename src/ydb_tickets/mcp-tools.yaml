@@ -3,7 +3,7 @@
   input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string"},"category":{"type":"string"},"text":{"type":"string"}},"required":["user_id","category","text"]}'
   action:
     function_call:
-      function_id: <CF_ID>
+      function_id: d4e5t4gu958lptuo65f4
       tag: $latest
 
 - name: list-my-tickets
@@ -11,5 +11,5 @@
   input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string"}},"required":["user_id"]}'
   action:
     function_call:
-      function_id: <CF_ID>
+      function_id: d4e5t4gu958lptuo65f4
       tag: $latest
