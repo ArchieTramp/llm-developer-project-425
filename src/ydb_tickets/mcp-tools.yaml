@@ -1,0 +1,15 @@
+- name: create-ticket
+  description: "Создать тикет в Help Desk. Вызывай, когда пользователь просит завести заявку или когда ответа в базе знаний нет."
+  input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string","description":"email отправителя"},"category":{"type":"string","enum":["bug","docs","feature","access"]},"text":{"type":"string","description":"текст обращения"}},"required":["user_id","category","text"]}'
+  action:
+    function_call:
+      function_id: d4ef07cbmfgh46aoquib
+      tag: $latest
+
+- name: list-my-tickets
+  description: "Показать ранее созданные заявки пользователя."
+  input_json_schema: '{"type":"object","properties":{"user_id":{"type":"string","description":"email пользователя"}},"required":["user_id"]}'
+  action:
+    function_call:
+      function_id: d4ef07cbmfgh46aoquib
+      tag: $latest
