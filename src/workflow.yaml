@@ -1,0 +1,72 @@
+yawl: '0.2'
+start: select_tickets
+steps:
+  select_tickets:
+    databaseQuery:
+      connection:
+        type: YDB
+        host: ydb.serverless.yandexcloud.net
+        port: 2135
+        database: /ru-central1/b1g2mba7e4ll1tfptlhm/etnn60um9qqgmrugnbp9
+        ssl: true
+        iam: true
+      query: >
+        SELECT id, user_id, category, text, created_at FROM tickets WHERE status
+        = 'open'
+          AND created_at < CurrentUtcTimestamp() - Interval('PT24H')
+      mode: QUERY
+      next: check_empty
+      retryPolicy:
+        errorList:
+          - DATABASE_QUERY_UNAVAILABLE
+          - STEP_TIMEOUT
+        errorListMode: INCLUDE
+        initialDelay: 2s
+        maxDelay: 30s
+        retryCount: 3
+  check_empty:
+    switch:
+      choices:
+        - condition: 'true'
+          next: generate_digest
+  generate_digest:
+    aiStudioAgent:
+      promptTemplateId: aacb0bgbn72j1hvta1hg
+      message: >-
+        Сформируй краткий дайджест для оператора по просроченным тикетам.
+        Данные: \(.select_tickets.result)
+      autoApprove: true
+      output: '\({reply: .Result})'
+      next: mark_escalated
+  mark_escalated:
+    databaseQuery:
+      connection:
+        type: YDB
+        host: ydb.serverless.yandexcloud.net
+        port: 2135
+        database: /ru-central1/b1g2mba7e4ll1tfptlhm/etnn60um9qqgmrugnbp9
+        ssl: true
+        iam: true
+      query: >
+        UPDATE tickets SET status = 'escalated', updated_at =
+        CurrentUtcTimestamp() WHERE status = 'open'
+          AND created_at < CurrentUtcTimestamp() - Interval('PT24H')
+      mode: QUERY
+      next: send_digest
+  send_digest:
+    httpCall:
+      method: POST
+      url: https://functions.yandexcloud.net/d4ess69cgfqg4mq5nnq8
+      headers:
+        Content-Type: application/json
+      query:
+        subject: 'Help Desk: просроченные тикеты'
+        body: '{{ generate_digest.reply }}'
+      output: '{{ {response: .} }}'
+      next: done
+  done:
+    success: {}
+defaultRetryPolicy:
+  errorList:
+    - ALL
+  errorListMode: INCLUDE
