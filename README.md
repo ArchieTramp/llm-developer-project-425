@@ -1,53 +1,25 @@
 # AI-агент службы поддержки
 
-
 [![hexlet-check](https://github.com/ArchieTramp/llm-developer-project-425/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/ArchieTramp/llm-developer-project-425/actions)
 
-Соберите Help Desk-агента на Yandex AI Studio: почтовый агент (IMAP/SMTP) принимает
-обращения сотрудников, ищет ответ в корпоративной базе знаний (RAG) и при необходимости
-заводит тикет и сохраняет переписку в YDB Serverless. По пути освоите агента в AI Studio
-(Responses API), собственный MCP-инструмент, workflow по расписанию, RAG, защиту от
-prompt injection и PII-утечек, а также наблюдаемость (трейсы и токены). Решение
-разворачивается в вашем аккаунте Yandex Cloud (Cloud Functions, Workflows, MCP Hub,
-Lockbox). Сдача — репозиторий с конфигами и рабочий почтовый агент.
+Соберите Help Desk-агента на Yandex AI Studio: почтовый агент (IMAP/SMTP) принимает обращения сотрудников, ищет ответ в корпоративной базе знаний (RAG) и при необходимости заводит тикет и сохраняет переписку в YDB Serverless.
 
-Учебный проект Хекслета: https://ru.hexlet.io/programs/llm-developer
-Как это должно работать: 
+## Как это работает
+
+1. **Приём почты**: Cloud Function `email-poller` раз в минуту забирает новые письма по IMAP.
+2. **RAG**: Агент ищет ответ в базе знаний (Vector Store).
+3. **Действия**: Агент отвечает или создаёт тикет (команда `/ticket`).
+4. **Ответ**: Письмо отправляется по SMTP, история и телеметрия (токены, latency) пишутся в YDB.
 
 ## Стек
 
-- Разное
+- **Язык**: Python 3.12
+- **Инфраструктура**: Yandex Cloud Functions, YDB Serverless, Lockbox, Yandex AI Studio (Responses API)
+- **Библиотеки**: `ydb`, `requests`
 
 ## Установка
 
-<!-- Опишите установку: клонирование, зависимости, переменные окружения -->
-
+1. Склонируйте репозиторий:
 ```bash
 git clone https://github.com/ArchieTramp/llm-developer-project-425.git
 cd llm-developer-project-425
-```
-
-## Использование
-
-<!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
-
----
-
-<details>
-<summary>Автоматические тесты Хекслета</summary>
-
-Тесты запускаются на каждый коммит. За запуск отвечает файл `.github/workflows/hexlet-check.yml` — не удаляйте и не переименовывайте ни его, ни репозиторий.
-
-</details>
-
-## О Хекслете
-
-[Хекслет](https://ru.hexlet.io/) — школа программирования: авторские программы обучения с практикой, поддержкой наставников и реальными проектами, которые остаются в резюме. Этот репозиторий — один из таких проектов.
-
-## AI Studio
-
-- Агент: help-desk
-- agent_id: aac952hbacomb8hvcvvd
-- Модель: Deepseek
-- SA ai-studio-sa привязан к Cloud Function (не к агенту), роли: functions.functionInvoker, serverless.mcpGateways.invoker, lockbox.payloadViewer, ai.languageModels.user, ydb.editor
-- Секреты Lockbox: ydb-endpoint (ID), ydb-database (ID)
